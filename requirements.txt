@@ -1,0 +1,5 @@
+matplotlib>=3.8.4
+pydub~=0.25.1
+openai-whisper~=20231117
+simple-diarizer~=0.0.13
+soundfile>=0.12.1
