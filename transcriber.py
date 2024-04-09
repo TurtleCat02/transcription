@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -70,12 +71,15 @@ def transcribe(audio_file, segment_file, output):
 def write_transcript(out, log, speaker, transcript, seg_start, seg_end):
     if not transcript['segments']:
         return
-
-    out.write(f"[{float(seg_start / SAMPLE_RATE):.2f}->{float(seg_end / SAMPLE_RATE):.2f}] Speaker {speaker}: ".encode("utf-8"))
+    start_m, start_s = divmod(float(seg_start / SAMPLE_RATE), 60)
+    end_m, end_s = divmod(float(seg_end / SAMPLE_RATE), 60)
+    out.write(f"[{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}: ".encode("utf-8"))
     for segment in transcript["segments"]:
+        start_m, start_s = divmod(float((seg_start / SAMPLE_RATE) + segment['start']), 60)
+        end_m, end_s = divmod(float((seg_start / SAMPLE_RATE) + segment['end']), 60)
         text = segment['text'].strip()
-        log.write(f"({segment['no_speech_prob']:.3f},{segment['avg_logprob']:.3f}) [{float((seg_start / SAMPLE_RATE) + segment['start']):.3f}->{float((seg_start / SAMPLE_RATE) + segment['end']):.3f}] Speaker {speaker}: ".encode("utf-8"))
-        print(f"[{float((seg_start / SAMPLE_RATE) + segment['start']):.3f}->{float((seg_start / SAMPLE_RATE) + segment["end"]):.3f}] Speaker {speaker}: ", end="")
+        log.write(f"({segment['no_speech_prob']:.3f},{segment['avg_logprob']:.3f}) [{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}: ".encode("utf-8"))
+        print(f"[{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}: ", end="")
         if segment["no_speech_prob"] > HARD_SPEECH_THRESH:
             log.write(f"(SUPPRESSED-NO SPEECH) ".encode("utf-8"))
             print(f"(SUPPRESSED-NO SPEECH)")
