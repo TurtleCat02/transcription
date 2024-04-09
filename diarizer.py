@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -32,9 +33,11 @@ def diarize(audio_file, num_speakers=None, outfile=None, embed=EMBED, cluster=CL
         outfile = f".\\segments\\{filepath.stem}.rttm"
     else:
         outfile = Path(outfile).with_suffix(".rttm")
+    outfile.parent.mkdir(parents=True, exist_ok=True)
     segments = diar.diarize(converted,
                             num_speakers=num_speakers,
                             outfile=outfile)
+    os.makedirs("./plots/", exist_ok=True)
     combined_waveplot(signal, fs, segments, figsize=(10, 3), tick_interval=60)
     plt.savefig(f".\\plots\\{Path(outfile).stem}.png")
 
