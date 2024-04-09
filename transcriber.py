@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -23,6 +24,9 @@ def transcribe(audio_file, segment_file, output):
 
     if segment_file is None:
         segment_file = f"./segments/{Path(audio_file).stem}.rttm"
+
+    Path(logfile).parent.mkdir(parents=True, exist_ok=True)
+    Path(output).parent.mkdir(parents=True, exist_ok=True)
 
     prev_speaker = None
     prev_lang = None
@@ -77,7 +81,7 @@ def write_transcript(out, log, speaker, transcript, seg_start, seg_end):
         elif segment["avg_logprob"] < SOFT_AVGLOGPROB_THRESH:
             if segment["avg_logprob"] < HARD_AVGLOGPROB_THRESH:
                 if segment["no_speech_prob"] < UNINTELLIGIBLE_SPEECH_THRESH:
-                    out.write(" |UNINTELLIGIBLE| ".encode("utf-8"))
+                    out.write("|UNINTELLIGIBLE| ".encode("utf-8"))
                     log.write("|UNINTELLIGIBLE| ".encode("utf-8"))
                     print(f"|UNINTELLIGIBLE|")
                 else:
