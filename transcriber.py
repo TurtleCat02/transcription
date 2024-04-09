@@ -1,4 +1,3 @@
-import os
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -18,12 +17,14 @@ UNINTELLIGIBLE_SPEECH_THRESH = 0.5
 
 
 def transcribe(audio_file, segment_file, output):
+    if segment_file is None:
+        segment_file = f"./segments/{Path(audio_file).stem}.rttm"
+    if output is None:
+        output = f"./transcripts/{Path(audio_file).stem}.txt"
+
     logfile = f"./logs/{Path(output).stem}.txt"
     model = whisper.load_model(MODEL)
     audio = whisper.load_audio(audio_file)
-
-    if segment_file is None:
-        segment_file = f"./segments/{Path(audio_file).stem}.rttm"
 
     Path(logfile).parent.mkdir(parents=True, exist_ok=True)
     Path(output).parent.mkdir(parents=True, exist_ok=True)
@@ -40,7 +41,7 @@ def transcribe(audio_file, segment_file, output):
             start = int(float(data[3]) * SAMPLE_RATE)
             end = start + int(float(data[4]) * SAMPLE_RATE)
 
-            mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio[start:end]))
+            mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio[start:end])).to(model.device)
             _, probs = model.detect_language(mel)
             lang = "en" if probs["en"] > probs["zh"] else "zh"
 

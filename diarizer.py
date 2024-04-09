@@ -4,10 +4,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-NUM_SPEAKERS = 4
-FILENAME = "Febe_Distributor_Taichung_Interview_26_03"
-PATH = f"./audio/{FILENAME}.wav"
-CONVERTED_PATH = f"./audio/{FILENAME}_converted.wav"
 EMBED = "ecapa"
 CLUSTER = "sc"
 WINDOW = 1.5
@@ -33,10 +29,12 @@ def diarize(audio_file, num_speakers=None, outfile=None, embed=EMBED, cluster=CL
         outfile = f".\\segments\\{filepath.stem}.rttm"
     else:
         outfile = Path(outfile).with_suffix(".rttm")
-    outfile.parent.mkdir(parents=True, exist_ok=True)
+
+    Path(outfile).parent.mkdir(parents=True, exist_ok=True)
     segments = diar.diarize(converted,
                             num_speakers=num_speakers,
-                            outfile=outfile)
+                            outfile=outfile,
+                            silence_tolerance=0.1)
     os.makedirs("./plots/", exist_ok=True)
     combined_waveplot(signal, fs, segments, figsize=(10, 3), tick_interval=60)
     plt.savefig(f".\\plots\\{Path(outfile).stem}.png")
