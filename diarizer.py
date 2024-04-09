@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Speech diarization")
     parser.add_argument("audio_file")
     parser.add_argument('-n', "--num_speakers", type=int)
-    parser.add_argument('-o', '--outfile', default=None)
+    parser.add_argument('-o', '--outfile')
     parser.add_argument('-e', '--embed', default=EMBED, choices=["xvec", "ecapa"])
     parser.add_argument('-c', '--cluster', default=CLUSTER, choices=["ahc", "sc"])
     parser.add_argument('-w', '--window', default=WINDOW, type=float)

@@ -1,9 +1,10 @@
-audio/
-diarized/
-plots/
+audio/*
+diarized/*
+logs/*
+plots/*
 pretrained_models/
-segments/
-transcripts/
+segments/*
+transcripts/*
 .idea/
 
 *.pyc
