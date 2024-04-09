@@ -34,7 +34,8 @@ def diarize(audio_file, num_speakers=None, outfile=None, embed=EMBED, cluster=CL
     segments = diar.diarize(converted,
                             num_speakers=num_speakers,
                             outfile=outfile,
-                            silence_tolerance=0.1)
+                            silence_tolerance=0.1,
+                            threshold=1e-2)
     os.makedirs("./plots/", exist_ok=True)
     combined_waveplot(signal, fs, segments, figsize=(10, 3), tick_interval=60)
     plt.savefig(f".\\plots\\{Path(outfile).stem}.png")
