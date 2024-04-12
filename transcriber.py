@@ -1,8 +1,10 @@
 import os
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import Optional, List
 
 import whisper
+from whisper.tokenizer import LANGUAGES, TO_LANGUAGE_CODE
 
 MODEL = "base"
 SAMPLE_RATE = 16000
@@ -17,7 +19,19 @@ HARD_AVGLOGPROB_THRESH = -2.5
 UNINTELLIGIBLE_SPEECH_THRESH = 0.5
 
 
-def transcribe(audio_file, segment_file, output):
+def transcribe(audio_file, segment_file=None, output=None, translate=False, languages=None):
+    if languages:
+        langs = []
+        for lang in languages:
+            if lang not in LANGUAGES:
+                if lang in TO_LANGUAGE_CODE:
+                    langs.append(TO_LANGUAGE_CODE[lang])
+                else:
+                    print(f"Language code {lang:!r} not supported by whisper")
+                    return
+            else:
+                langs.append(lang)
+
     if segment_file is None:
         segment_file = f"./segments/{Path(audio_file).stem}.rttm"
     if output is None:
@@ -44,7 +58,10 @@ def transcribe(audio_file, segment_file, output):
 
             mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio[start:end])).to(model.device)
             _, probs = model.detect_language(mel)
-            lang = "en" if probs["en"] > probs["zh"] else "zh"
+            if languages:
+                probs = {k: probs[k] for k in langs}
+                # lang = "en" if probs["en"] > probs["zh"] else "zh"
+            lang = max(probs, key=probs.get)
 
             if (speaker == prev_speaker) and (lang == prev_lang):
                 seg_end = end
@@ -55,31 +72,51 @@ def transcribe(audio_file, segment_file, output):
                 seg_end = end
                 continue
 
+            if translate and prev_lang != "en":
+                task = "translate"
+            else:
+                task = "transcribe"
+
             transcript = model.transcribe(audio[seg_start:seg_end], no_speech_threshold=WHISPER_SPEECH_THRESH,
-                                          logprob_threshold=WHISPER_AVGLOGPROB_THRESH, language=prev_lang)
-            write_transcript(out, log, prev_speaker, transcript, seg_start, seg_end)
+                                          logprob_threshold=WHISPER_AVGLOGPROB_THRESH, language=prev_lang, task=task)
+            _write_transcript(out, log, prev_speaker, transcript, seg_start, seg_end, prev_lang)
             prev_lang = lang
             prev_speaker = speaker
             seg_start = start
             seg_end = end
 
+        if translate and prev_lang != "en":
+            task = "translate"
+        else:
+            task = "transcribe"
+
         transcript = model.transcribe(audio[seg_start:seg_end], no_speech_threshold=WHISPER_SPEECH_THRESH,
-                                      logprob_threshold=WHISPER_AVGLOGPROB_THRESH, language=prev_lang)
-        write_transcript(out, log, prev_speaker, transcript, seg_start, seg_end)
+                                      logprob_threshold=WHISPER_AVGLOGPROB_THRESH, language=prev_lang, task=task)
+        _write_transcript(out, log, prev_speaker, transcript, seg_start, seg_end, prev_lang)
 
 
-def write_transcript(out, log, speaker, transcript, seg_start, seg_end):
+def _write_transcript(out, log, speaker, transcript, seg_start, seg_end, lang=None):
     if not transcript['segments']:
         return
+    if lang:
+        lang = f" [{lang}]"
+    else:
+        lang = ""
+
     start_m, start_s = divmod(float(seg_start / SAMPLE_RATE), 60)
     end_m, end_s = divmod(float(seg_end / SAMPLE_RATE), 60)
-    out.write(f"[{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}: ".encode("utf-8"))
+    out.write(
+        f"[{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}{lang}: ".encode(
+            "utf-8"))
     for segment in transcript["segments"]:
         start_m, start_s = divmod(float((seg_start / SAMPLE_RATE) + segment['start']), 60)
         end_m, end_s = divmod(float((seg_start / SAMPLE_RATE) + segment['end']), 60)
         text = segment['text'].strip()
-        log.write(f"({segment['no_speech_prob']:.3f},{segment['avg_logprob']:.3f}) [{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}: ".encode("utf-8"))
-        print(f"[{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}: ", end="")
+        log.write(
+            f"({segment['no_speech_prob']:.3f},{segment['avg_logprob']:.3f}) [{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}{lang}: ".encode(
+                "utf-8"))
+        print(f"[{int(start_m):0>2d}:{int(start_s):0>2d}->{int(end_m):0>2d}:{int(end_s):0>2d}] Speaker {speaker}{lang}: ",
+              end="")
         if segment["no_speech_prob"] > HARD_SPEECH_THRESH:
             log.write(f"(SUPPRESSED-NO SPEECH) ".encode("utf-8"))
             print(f"(SUPPRESSED-NO SPEECH)")
@@ -113,5 +150,17 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--segment_file')
     parser.add_argument('-m', '--model', choices=["base", "small", "medium", "large"], default="base")
     parser.add_argument('-o', '--output')
+    parser.add_argument('-t', '--translate', action="store_true")
+    parser.add_argument('-l', '--languages')
     args = parser.parse_args()
-    transcribe(args.audio_file, args.segment_file, args.output)
+
+    languages = None
+    if args.languages:
+        if '+' in args.languages:
+            languages = args.languages.split('+')
+        elif ',' in args.languages:
+            languages = args.languages.split(',')
+        else:
+            languages = [args.languages]
+
+    transcribe(args.audio_file, args.segment_file, args.output, args.translate, languages)
