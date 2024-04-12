@@ -7,8 +7,12 @@ If you want to use with a GPU (which you should, only supports NVIDIA GPUs) run:
 
 Run `pip install -r requirements.txt`
 
+Windows:
 Install ffmpeg by running `winget install "FFmpeg (Essentials Build)"`
-or downloading [this](https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z) and adding the bin folder to your windows path
+or downloading [this](https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z) and adding the bin folder to your windows path.
+
+Linux:
+Install ffmpeg with your distro's package manager.
 
 Add your audio file to `.\audio\` and run the diarizer and then the transcriber  
 `python .\diarizer.py .\audio\<AUDIO_FILE> -n <NUM_SPEAKERS>`  
