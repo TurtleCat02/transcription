@@ -1,5 +1,6 @@
-# How to use:
+# How to use this program
 
+## Setup:
 Create a python environment (this program was written in Python 3.12, earlier 3.xx versions may work)
 
 If you want to use with a GPU (which you should, only supports NVIDIA GPUs) run:  
@@ -7,12 +8,16 @@ If you want to use with a GPU (which you should, only supports NVIDIA GPUs) run:
 
 Run `pip install -r requirements.txt`
 
-Windows:
+### Windows:
+
 Install ffmpeg by running `winget install "FFmpeg (Essentials Build)"`
 or downloading [this](https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z) and adding the bin folder to your windows path.
 
-Linux:
+### Linux:
+
 Install ffmpeg with your distro's package manager.
+
+## Running:
 
 Add your audio file to `.\audio\` and run the diarizer and then the transcriber  
 `python .\diarizer.py .\audio\<AUDIO_FILE> -n <NUM_SPEAKERS>`  
